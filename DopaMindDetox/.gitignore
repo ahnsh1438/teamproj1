@@ -1,0 +1,31 @@
+# Android / Gradle artifacts
+.gradle/
+build/
+*/build/
+.externalNativeBuild/
+.cxx/
+captures/
+
+# IDE
+.idea/
+*.iml
+out/
+
+# Local/secrets
+local.properties
+*.jks
+*.keystore
+*.keystore.properties
+signing.properties
+**/google-services.json
+
+# Artifacts/logs
+*.apk
+*.aab
+*.log
+*.hprof
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

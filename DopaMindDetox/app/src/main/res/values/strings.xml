@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">DopaMindDetox</string>
+    <string name="notify_channel_name">Dopa Monitor</string>
+    <string name="notify_channel_desc">App usage monitor</string>
+</resources>
