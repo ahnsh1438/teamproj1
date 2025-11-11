@@ -13,7 +13,7 @@
     <application
         android:name=".DopaApp"
         android:label="@string/app_name"
-        android:theme="@style/Theme.DopaMindDetox">
+        android:theme="@style/Theme.App.Starting">
 
         <activity
             android:name=".overlay.BlockOverlayActivity"

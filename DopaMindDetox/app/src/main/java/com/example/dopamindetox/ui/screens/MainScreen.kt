@@ -11,15 +11,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.dopamindetox.vm.MainViewModel
+import androidx.navigation.NavController
 
 @Composable
-fun MainScreen(vm: MainViewModel) {
+fun MainScreen(
+    vm: MainViewModel,
+    navController: NavController,
+    padding: PaddingValues // 'padding'을 받도록
+) {
     val ctx = LocalContext.current
     val blocked by vm.blockedApps.collectAsState()
     val goal by vm.goalMinutes.collectAsState()
     val recommended by vm.recommendedGoal.collectAsState()
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
+    // --- 'Column'에 'padding' 적용 ---
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(padding) // 하단 탭 높이만큼 패딩 적용
+            .padding(16.dp)   // 기존 16dp 패딩도 적용
+    ) {
         Text("목표 시간 (분)", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         var input by remember { mutableStateOf(goal.toString()) }

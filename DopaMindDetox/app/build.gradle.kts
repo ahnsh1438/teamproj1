@@ -87,4 +87,6 @@ dependencies {
 
     // ✅ Debug preview용
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    implementation("androidx.core:core-splashscreen:1.0.1")
 }
