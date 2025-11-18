@@ -12,8 +12,10 @@
 
     <application
         android:name=".DopaApp"
-        android:label="@string/app_name"
+        android:label="제로도파민"
+        android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.App.Starting">
+
 
         <activity
             android:name=".overlay.BlockOverlayActivity"
