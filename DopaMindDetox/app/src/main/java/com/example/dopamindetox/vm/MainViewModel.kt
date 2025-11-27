@@ -11,7 +11,10 @@ import kotlinx.coroutines.launch
 
 class MainViewModel(app: Application, private val repo: AppRepository) : AndroidViewModel(app) {
 
-    // (DB '읽기' 준비 - '백그라운드'에서)
+    // 📌 1. 스낵바 메시지 전달을 위한 채널(Flow) 추가
+    private val _snackbarMessage = MutableSharedFlow<String>()
+    val snackbarMessage: SharedFlow<String> = _snackbarMessage.asSharedFlow()
+
     val blockedApps: StateFlow<List<BlockedApp>> = repo.blocked
         .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -19,6 +22,9 @@ class MainViewModel(app: Application, private val repo: AppRepository) : Android
     val goalMinutes: StateFlow<Int> = repo.goal().map { it?.minutes ?: 0 }
         .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val isServiceRunning: StateFlow<Boolean> = ForegroundMonitorService.isRunning
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val recommendedGoal = MutableStateFlow(60)
     val weeklyUsage = MutableStateFlow<List<Pair<String, Int>>>(emptyList())
@@ -35,19 +41,30 @@ class MainViewModel(app: Application, private val repo: AppRepository) : Android
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
 
-    fun startMonitoringService() {
-        ForegroundMonitorService.start(getApplication())
+    // 📌 2. 각 함수가 실행될 때 스낵바 메시지를 채널로 보내도록 수정
+    fun startMonitoringService() = viewModelScope.launch {
+        repo.startMonitoringService()
+        _snackbarMessage.emit("차단 서비스가 시작되었습니다.")
     }
-    fun saveGoal(min:Int) = viewModelScope.launch(Dispatchers.IO) { repo.setGoal(min) }
-    fun addBlocked(pkg:String, label:String) = viewModelScope.launch(Dispatchers.IO) { repo.addBlocked(pkg,label) }
-    fun removeBlocked(pkg:String) = viewModelScope.launch(Dispatchers.IO) { repo.removeBlocked(pkg) }
-    fun addTodo(title:String) = viewModelScope.launch(Dispatchers.IO) { repo.addTodo(title) }
-    fun toggleTodo(id:Long, c:Boolean) = viewModelScope.launch(Dispatchers.IO) { repo.toggleTodo(id, c) }
-    fun addActivity(title:String) = viewModelScope.launch(Dispatchers.IO) { repo.addActivity(title) }
-    fun renameActivity(id:Long, t:String) = viewModelScope.launch(Dispatchers.IO) { repo.renameActivity(id,t) }
-    fun deleteActivity(id:Long) = viewModelScope.launch(Dispatchers.IO) { repo.deleteActivity(id) }
 
-    // (데이터 분석 - '나중에' 부를 때만 '백그라운드'에서)
+    fun stopMonitoringService() = viewModelScope.launch {
+        repo.stopMonitoringService()
+        _snackbarMessage.emit("차단 서비스가 종료되었습니다.")
+    }
+
+    fun saveGoal(min: Int) = viewModelScope.launch {
+        repo.setGoal(min)
+        _snackbarMessage.emit("목표 시간이 저장되었습니다.")
+    }
+
+    fun addBlocked(pkg: String, label: String) = viewModelScope.launch(Dispatchers.IO) { repo.addBlocked(pkg, label) }
+    fun removeBlocked(pkg: String) = viewModelScope.launch(Dispatchers.IO) { repo.removeBlocked(pkg) }
+    fun addTodo(title: String) = viewModelScope.launch(Dispatchers.IO) { repo.addTodo(title) }
+    fun toggleTodo(id: Long, c: Boolean) = viewModelScope.launch(Dispatchers.IO) { repo.toggleTodo(id, c) }
+    fun addActivity(title: String) = viewModelScope.launch(Dispatchers.IO) { repo.addActivity(title) }
+    fun renameActivity(id: Long, t: String) = viewModelScope.launch(Dispatchers.IO) { repo.renameActivity(id, t) }
+    fun deleteActivity(id: Long) = viewModelScope.launch(Dispatchers.IO) { repo.deleteActivity(id) }
+
     fun refreshAnalytics() = viewModelScope.launch(Dispatchers.IO) {
         val weekly = repo.weeklyUsage()
         weeklyUsage.value = weekly
@@ -60,9 +77,9 @@ class MainViewModel(app: Application, private val repo: AppRepository) : Android
 class MainViewModelFactory(
     private val app: Application,
     private val repository: AppRepository
-): ViewModelProvider.Factory {
+) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
-    override fun <T: ViewModel> create(modelClass: Class<T>): T {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return MainViewModel(app, repository) as T
     }
 }

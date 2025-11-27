@@ -1,6 +1,7 @@
 package com.example.dopamindetox.ui.screens
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -12,33 +13,22 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import com.example.dopamindetox.vm.MainViewModel
 
+// 📌 1. padding 파라미터 추가
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddGoalScreen(
     vm: MainViewModel,
-    navController: NavController
+    navController: NavController,
+    padding: PaddingValues
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("새 목표 추가") },
-                // '뒤로가기' 버튼
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) { // 👈 누르면 뒤로 감
-                        Icon(Icons.Default.ArrowBack, contentDescription = "뒤로가기")
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            // TODO: 여기에 '목표 추가' UI를 만듭니다
-            Text("새 목표 추가 화면")
-        }
+    // 📌 2. 내부 Scaffold 제거하고 Box로 변경
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(padding), // 전달받은 패딩 적용
+        contentAlignment = Alignment.Center
+    ) {
+        // TODO: 여기에 '목표 추가' UI를 만듭니다
+        Text("새 목표 추가 화면")
     }
 }

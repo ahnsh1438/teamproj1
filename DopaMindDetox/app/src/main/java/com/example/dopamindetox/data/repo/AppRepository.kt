@@ -10,6 +10,7 @@ import com.example.dopamindetox.data.db.*
 import com.example.dopamindetox.data.model.classify
 import com.example.dopamindetox.data.structures.RedBlackTree
 import com.example.dopamindetox.data.structures.StackList
+import com.example.dopamindetox.service.ForegroundMonitorService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -97,6 +98,11 @@ class AppRepository(private val ctx: Context, private val db: AppDatabase) {
     private fun nowTime(): String = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
 
     fun startMonitoringService() {
-        com.example.dopamindetox.service.ForegroundMonitorService.start(ctx)
+        ForegroundMonitorService.start(ctx)
+    }
+
+    // 📌 서비스 종료 함수 추가
+    fun stopMonitoringService() {
+        ForegroundMonitorService.stop(ctx)
     }
 }

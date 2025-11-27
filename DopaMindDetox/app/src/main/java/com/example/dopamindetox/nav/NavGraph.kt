@@ -1,6 +1,7 @@
 package com.example.dopamindetox.nav
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Checklist
@@ -25,7 +26,7 @@ sealed class Screen(val route: String, val label: String) {
 }
 
 @Composable
-fun AppNavHost(mainVm: MainViewModel) {
+fun AppNavHost(mainVm: MainViewModel, padding: PaddingValues) {
     val navController = rememberNavController()
     val items = listOf(Screen.Main, Screen.Analysis, Screen.Todo)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -34,9 +35,7 @@ fun AppNavHost(mainVm: MainViewModel) {
     val showBottomBar = currentRoute in items.map { it.route }
     val showTopBar = currentRoute == Screen.Main.route || currentRoute == Screen.Analysis.route
 
-    // 🛑 권한 체크 로직을 제거하고 무조건 FirstScreen에서 시작하도록 고정합니다. (크래시 방지)
     val startDestination = Screen.First.route
-
 
     Scaffold(
         topBar = {
@@ -71,7 +70,7 @@ fun AppNavHost(mainVm: MainViewModel) {
                 }
             }
         }
-    ) { padding ->
+    ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = startDestination,
@@ -80,7 +79,6 @@ fun AppNavHost(mainVm: MainViewModel) {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             composable(Screen.First.route) {
-                // FirstEntryScreen에서 권한 체크 및 '시작하기' 버튼 활성화를 담당합니다.
                 FirstEntryScreen(onContinue = {
                     navController.navigate(Screen.Main.route) {
                         popUpTo(Screen.First.route) { inclusive = true }
@@ -88,18 +86,21 @@ fun AppNavHost(mainVm: MainViewModel) {
                 }, vm = mainVm)
             }
 
+            // 📌 모든 하위 화면에 일관되게 padding 전달
             composable(Screen.Main.route) {
-                MainScreen(vm = mainVm, navController = navController, padding = padding)
+                MainScreen(vm = mainVm, navController = navController, padding = innerPadding)
             }
             composable(Screen.Analysis.route) {
-                AnalysisScreen(vm = mainVm, navController = navController, padding = padding)
+                AnalysisScreen(vm = mainVm, navController = navController, padding = innerPadding)
             }
-            composable(Screen.Todo.route) { TodoScreen(vm = mainVm, navController = navController) }
+            composable(Screen.Todo.route) { 
+                TodoScreen(vm = mainVm, navController = navController, padding = innerPadding)
+            }
             composable(Screen.AddGoal.route) {
-                AddGoalScreen(vm = mainVm, navController = navController)
+                AddGoalScreen(vm = mainVm, navController = navController, padding = innerPadding)
             }
             composable(Screen.Recommend.route) {
-                RecommendScreen(vm = mainVm, navController = navController)
+                RecommendScreen(vm = mainVm, navController = navController, padding = innerPadding)
             }
         }
     }

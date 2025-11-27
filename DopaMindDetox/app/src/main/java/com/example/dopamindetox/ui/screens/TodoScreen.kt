@@ -29,17 +29,54 @@ import java.time.format.TextStyle
 import java.util.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.example.dopamindetox.data.db.Todo
-import com.example.dopamindetox.data.db.AltActivity
 
-// 상단바
+// 📌 1. TodoScreen이 padding을 파라미터로 받도록 수정
+@Composable
+fun TodoScreen(
+    vm: MainViewModel,
+    navController: NavController,
+    padding: PaddingValues
+) {
+    val todos by vm.todos.collectAsState()
+    val activities by vm.altActivities.collectAsState()
+
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+
+    // 📌 2. 내부 Scaffold를 제거하고 Column으로 변경
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(padding) // NavGraph로부터 전달받은 패딩 적용
+    ) {
+        TodoTopContent(
+            selectedDate = selectedDate,
+            onMonthChange = { newYear, newMonth ->
+                selectedDate = LocalDate.of(newYear, newMonth, 1)
+            },
+            onDateSelected = { selectedDate = it }
+        )
+
+        HorizontalDivider(modifier = Modifier.fillMaxWidth(), color = Color.Gray.copy(alpha = 0.3f))
+
+        if (todos.isEmpty() && activities.isEmpty()) {
+            EmptyStateUI(navController)
+        } else {
+            TodoList(todos, activities, vm)
+        }
+    }
+}
+
+// 상단 날짜 선택 영역
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodoTopAppBar(
+fun TodoTopContent(
     selectedDate: LocalDate,
     onMonthChange: (year: Int, month: Int) -> Unit,
+    onDateSelected: (LocalDate) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+
+    // TopAppBar와 유사한 UI 구성
     TopAppBar(
         title = {
             Box {
@@ -52,76 +89,42 @@ fun TodoTopAppBar(
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
-                    Icon(
-                        Icons.Default.ArrowDropDown,
-                        contentDescription = "날짜 선택"
-                    )
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = "날짜 선택")
                 }
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("${selectedDate.year - 1}년 (작년)") },
-                        onClick = {
-                            onMonthChange(selectedDate.year - 1, selectedDate.monthValue)
-                            expanded = false
-                        }
-                    )
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    DropdownMenuItem(text = { Text("${selectedDate.year - 1}년 (작년)") }, onClick = { onMonthChange(selectedDate.year - 1, selectedDate.monthValue); expanded = false })
                     (1..12).forEach { month ->
-                        DropdownMenuItem(
-                            text = { Text("${selectedDate.year}년 ${month}월") },
-                            onClick = {
-                                onMonthChange(selectedDate.year, month)
-                                expanded = false
-                            }
-                        )
+                        DropdownMenuItem(text = { Text("${selectedDate.year}년 ${month}월") }, onClick = { onMonthChange(selectedDate.year, month); expanded = false })
                     }
-                    DropdownMenuItem(
-                        text = { Text("${selectedDate.year + 1}년 (내년)") },
-                        onClick = {
-                            onMonthChange(selectedDate.year + 1, selectedDate.monthValue)
-                            expanded = false
-                        }
-                    )
+                    DropdownMenuItem(text = { Text("${selectedDate.year + 1}년 (내년)") }, onClick = { onMonthChange(selectedDate.year + 1, selectedDate.monthValue); expanded = false })
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent
-        )
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
     )
+    HorizontalCalendarView(selectedDate = selectedDate, onDateSelected = onDateSelected)
 }
 
-// 가로 스크롤 캘린더
+// 가로 캘린더
 @Composable
-fun HorizontalCalendarView(
-    selectedDate: LocalDate,
-    onDateSelected: (LocalDate) -> Unit
-) {
+fun HorizontalCalendarView(selectedDate: LocalDate, onDateSelected: (LocalDate) -> Unit) {
     val startDate = selectedDate.minusDays(selectedDate.dayOfWeek.value.toLong() - 1)
     val dates = List(21) { startDate.plusDays(it.toLong()) }
 
     LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 0.dp, bottom = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 0.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
         items(dates) { date ->
-            val dayOfWeek = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN) // "월", "화"
-            val dayOfMonth = date.dayOfMonth.toString() // "9", "10"
+            val dayOfWeek = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN)
+            val dayOfMonth = date.dayOfMonth.toString()
             val isSelected = date == selectedDate
             val containerColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
             val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
 
             Column(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(containerColor)
-                    .clickable { onDateSelected(date) }
-                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                modifier = Modifier.clip(CircleShape).background(containerColor).clickable { onDateSelected(date) }.padding(vertical = 8.dp, horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(dayOfWeek, fontSize = 12.sp, color = contentColor)
@@ -131,122 +134,52 @@ fun HorizontalCalendarView(
     }
 }
 
-// '진짜' TodoScreen 함수
+// 할 일 목록이 비었을 때의 UI
 @Composable
-fun TodoScreen(
-    vm: MainViewModel,
-    navController: NavController
-) {
-    // '번역기'가 잘 적용된 코드
-    val todos by vm.todos.collectAsState()
-    val activities by vm.altActivities.collectAsState()
-
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-
-    Scaffold(
-        topBar = {
-            TodoTopAppBar(
-                selectedDate = selectedDate,
-                onMonthChange = { newYear, newMonth ->
-                    selectedDate = LocalDate.of(newYear, newMonth, 1)
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            HorizontalCalendarView(
-                selectedDate = selectedDate,
-                onDateSelected = { selectedDate = it }
-            )
-            HorizontalDivider(modifier = Modifier.fillMaxWidth(), color = Color.Gray.copy(alpha = 0.3f))
-
-            if (todos.isEmpty() && activities.isEmpty()) {
-                // (데이터 없을 때 UI)
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        "등록된 목표가 없어요",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        "+ 버튼을 눌러 목표를 추가해 주세요",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Spacer(Modifier.height(16.dp))
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Button(onClick = {
-                            navController.navigate(Screen.Recommend.route)
-                        }) {
-                            Text("🌟 추천 목표 보기")
-                        }
-
-                        IconButton(
-                            onClick = {
-                                navController.navigate(Screen.AddGoal.route)
-                            },
-                            modifier = Modifier
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = CircleShape
-                                )
-                                .size(48.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "목표 추가",
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                }
-            } else {
-                // (데이터 있을 때 UI)
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(16.dp)
-                ) {
-                    // --- '할 일' 리스트 ---
-                    items(todos, key = { it.id }) { t ->
-                        ListItem(
-                            headlineContent = { Text(t.title) },
-                            supportingContent = { Text(if (t.completed) "완료 (${t.completedAt ?: ""})" else "미완료") },
-                            trailingContent = {
-                                Checkbox(checked = t.completed, onCheckedChange = {
-                                    vm.toggleTodo(t.id, it) // 👈 DB 작업 (백그라운드)
-                                })
-                            }
-                        )
-                        Divider()
-                    }
-
-                    // --- '활동' 리스트 ---
-                    items(activities, key = { it.id }) { a ->
-                        ListItem(
-                            headlineContent = { Text(a.title) },
-                            trailingContent = {
-                                Row {
-                                    TextButton(onClick = { vm.renameActivity(a.id, a.title + " ✨") }) { Text("수정") }
-                                    TextButton(onClick = { vm.deleteActivity(a.id) }) { Text("삭제") }
-                                }
-                            }
-                        )
-                        Divider()
-                    }
-                }
+fun EmptyStateUI(navController: NavController) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("등록된 목표가 없어요", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+        Text("+ 버튼을 눌러 목표를 추가해 주세요", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        Spacer(Modifier.height(16.dp))
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Button(onClick = { navController.navigate(Screen.Recommend.route) }) { Text("🌟 추천 목표 보기") }
+            IconButton(
+                onClick = { navController.navigate(Screen.AddGoal.route) },
+                modifier = Modifier.border(width = 1.dp, color = MaterialTheme.colorScheme.primary, shape = CircleShape).size(48.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "목표 추가", modifier = Modifier.size(24.dp))
             }
+        }
+    }
+}
+
+// 할 일 목록 UI
+@Composable
+fun TodoList(todos: List<com.example.dopamindetox.data.db.Todo>, activities: List<com.example.dopamindetox.data.db.AltActivity>, vm: MainViewModel) {
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        items(todos, key = { it.id }) { t ->
+            ListItem(
+                headlineContent = { Text(t.title) },
+                supportingContent = { Text(if (t.completed) "완료 (${t.completedAt ?: ""})" else "미완료") },
+                trailingContent = { Checkbox(checked = t.completed, onCheckedChange = { vm.toggleTodo(t.id, it) }) }
+            )
+            Divider()
+        }
+        items(activities, key = { it.id }) { a ->
+            ListItem(
+                headlineContent = { Text(a.title) },
+                trailingContent = {
+                    Row {
+                        TextButton(onClick = { vm.renameActivity(a.id, a.title + " ✨") }) { Text("수정") }
+                        TextButton(onClick = { vm.deleteActivity(a.id) }) { Text("삭제") }
+                    }
+                }
+            )
+            Divider()
         }
     }
 }
