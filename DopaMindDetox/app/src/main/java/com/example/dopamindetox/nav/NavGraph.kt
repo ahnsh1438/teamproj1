@@ -9,6 +9,8 @@ import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.example.dopamindetox.ui.screens.*
@@ -32,7 +34,7 @@ fun AppNavHost(mainVm: MainViewModel) {
     val currentRoute = navBackStackEntry?.destination?.route
 
     val showBottomBar = currentRoute in items.map { it.route }
-    val showTopBar = currentRoute == Screen.Main.route || currentRoute == Screen.Analysis.route
+    val showTopBar = currentRoute == Screen.Main.route
 
     // 🛑 권한 체크 로직을 제거하고 무조건 FirstScreen에서 시작하도록 고정합니다. (크래시 방지)
     val startDestination = Screen.First.route
@@ -41,7 +43,7 @@ fun AppNavHost(mainVm: MainViewModel) {
     Scaffold(
         topBar = {
             if (showTopBar) {
-                TopAppBar(title = { Text("DopaMindetox") })
+                TopAppBar(title = { Text("제로도파민", fontSize = 24.sp, fontWeight = FontWeight.Bold) })
             }
         },
         bottomBar = {
