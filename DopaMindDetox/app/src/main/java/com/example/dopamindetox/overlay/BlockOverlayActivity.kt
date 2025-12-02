@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.dopamindetox.DopaApp
 import com.example.dopamindetox.ui.theme.AppTheme
 import kotlinx.coroutines.flow.first
@@ -20,25 +21,62 @@ class BlockOverlayActivity : ComponentActivity() {
         enableEdgeToEdge()
         val repo = (application as DopaApp).repository
         val todos = runBlocking { repo.todos().first() }
-        val acts = runBlocking { repo.activities().first() }
 
         setContent {
             AppTheme {
                 Surface {
-                    Column(Modifier.fillMaxSize().padding(24.dp)) {
-                        Text("블락 모드", style = MaterialTheme.typography.headlineMedium)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp)
+                    ) {
+
+                        // 상단 제목
+                        Text(
+                            "블락 모드",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+
                         Spacer(Modifier.height(8.dp))
+
                         Text("지금은 설정한 차단 시간입니다.")
-                        Spacer(Modifier.height(16.dp))
-                        Text("해야 할 일", style = MaterialTheme.typography.titleMedium)
-                        todos.take(5).forEach { Text("• ${it.title}") }
-                        Spacer(Modifier.height(16.dp))
-                        Text("추천 활동", style = MaterialTheme.typography.titleMedium)
-                        acts.take(5).forEach { Text("• ${it.title}") }
-                        Spacer(Modifier.height(24.dp))
-                        Text("목표 달성 시 트로피가 제공됩니다 🏆")
-                        Spacer(Modifier.height(24.dp))
-                        Button(onClick = { finish() }) { Text("돌아가기") }
+
+                        Spacer(Modifier.height(20.dp))
+
+                        // 🟣 해야 할 일 — 글자 크게!
+                        Text(
+                            "해야 할 일",
+                            fontSize = 26.sp,      // 글자 크기 증가
+                            fontWeight = MaterialTheme.typography.titleLarge.fontWeight
+                        )
+
+                        Spacer(Modifier.height(10.dp))
+
+                        // 해야 할 일 목록
+                        todos.take(5).forEach {
+                            Text(
+                                "• ${it.title}",
+                                fontSize = 18.sp,      // 항목도 크게
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+
+                        Spacer(Modifier.height(40.dp))
+
+
+                        Button(
+                            onClick = { finish() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(54.dp),       // 버튼 키움
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Text(
+                                "제로도파민으로 돌아가기",
+                                fontSize = 18.sp,     // 버튼 글씨 크게
+                                fontWeight = MaterialTheme.typography.titleMedium.fontWeight
+                            )
+                        }
                     }
                 }
             }

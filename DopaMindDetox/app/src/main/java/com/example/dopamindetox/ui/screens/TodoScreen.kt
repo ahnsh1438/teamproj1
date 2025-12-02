@@ -11,6 +11,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -27,19 +29,88 @@ import com.example.dopamindetox.vm.MainViewModel
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.*
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import com.example.dopamindetox.data.db.Todo
-import com.example.dopamindetox.data.db.AltActivity
 
-// 상단바
+@Composable
+fun TodoScreen(
+    vm: MainViewModel,
+    navController: NavController,
+    padding: PaddingValues
+) {
+    val todos by vm.todos.collectAsState()
+    val activities by vm.altActivities.collectAsState()
+
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+
+    // 화면 재진입 시 오늘 날짜로 리셋
+    LaunchedEffect(Unit) {
+        selectedDate = LocalDate.now()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+    ) {
+
+        Column {
+            TodoTopContent(
+                selectedDate = selectedDate,
+                onMonthChange = { newYear, newMonth ->
+                    selectedDate = LocalDate.of(newYear, newMonth, 1)
+                },
+                onDateSelected = { selectedDate = it }
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.Gray.copy(alpha = 0.3f)
+            )
+
+            if (todos.isEmpty() && activities.isEmpty()) {
+                EmptyStateUI()
+            } else {
+                TodoList(todos, activities, vm)
+            }
+        }
+
+        /* ------------------- FAB 두 개: 추천 버튼 + 목표추가 버튼 ------------------- */
+
+        // ★ 추천 목표 버튼 (위)
+        FloatingActionButton(
+            onClick = { navController.navigate(Screen.Recommend.route) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 20.dp, bottom = 90.dp),
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        ) {
+            Icon(Icons.Default.Star, contentDescription = "추천 목표 보기")
+        }
+
+        // + 새로운 목표 추가 버튼 (아래)
+        FloatingActionButton(
+            onClick = { navController.navigate(Screen.AddGoal.route) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(20.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "목표 추가")
+        }
+    }
+}
+
+
+/* -------------------------- 날짜 선택 상단 UI -------------------------- */
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodoTopAppBar(
+fun TodoTopContent(
     selectedDate: LocalDate,
     onMonthChange: (year: Int, month: Int) -> Unit,
+    onDateSelected: (LocalDate) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+
     TopAppBar(
         title = {
             Box {
@@ -52,15 +123,10 @@ fun TodoTopAppBar(
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
-                    Icon(
-                        Icons.Default.ArrowDropDown,
-                        contentDescription = "날짜 선택"
-                    )
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = "날짜 선택")
                 }
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
+
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     DropdownMenuItem(
                         text = { Text("${selectedDate.year - 1}년 (작년)") },
                         onClick = {
@@ -87,166 +153,192 @@ fun TodoTopAppBar(
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent
-        )
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
     )
+
+    HorizontalCalendarView(selectedDate = selectedDate, onDateSelected = onDateSelected)
 }
 
-// 가로 스크롤 캘린더
+
+/* -------------------------- 가로 달력 -------------------------- */
+
 @Composable
-fun HorizontalCalendarView(
-    selectedDate: LocalDate,
-    onDateSelected: (LocalDate) -> Unit
-) {
+fun HorizontalCalendarView(selectedDate: LocalDate, onDateSelected: (LocalDate) -> Unit) {
     val startDate = selectedDate.minusDays(selectedDate.dayOfWeek.value.toLong() - 1)
     val dates = List(21) { startDate.plusDays(it.toLong()) }
 
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 0.dp, bottom = 8.dp),
+            .padding(bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
         items(dates) { date ->
-            val dayOfWeek = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN) // "월", "화"
-            val dayOfMonth = date.dayOfMonth.toString() // "9", "10"
+            val dayOfWeek = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN)
+            val dayOfMonth = date.dayOfMonth
             val isSelected = date == selectedDate
-            val containerColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
-            val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+
+            val bg = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+            val textColor =
+                if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
 
             Column(
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(containerColor)
+                    .background(bg)
                     .clickable { onDateSelected(date) }
                     .padding(vertical = 8.dp, horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(dayOfWeek, fontSize = 12.sp, color = contentColor)
-                Text(dayOfMonth, fontWeight = FontWeight.Bold, color = contentColor)
+                Text(dayOfWeek, color = textColor)
+                Text("$dayOfMonth", fontWeight = FontWeight.Bold, color = textColor)
             }
         }
     }
 }
 
-// '진짜' TodoScreen 함수
+
+/* -------------------------- 비어있는 화면 안내 -------------------------- */
+
 @Composable
-fun TodoScreen(
-    vm: MainViewModel,
-    navController: NavController
+fun EmptyStateUI() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("등록된 목표가 없어요", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+        Text("+ 버튼을 눌러 목표를 추가해 주세요", color = Color.Gray)
+    }
+}
+
+
+/* -------------------------- Todo + Activity 리스트 -------------------------- */
+
+@Composable
+fun TodoList(
+    todos: List<com.example.dopamindetox.data.db.Todo>,
+    activities: List<com.example.dopamindetox.data.db.AltActivity>,
+    vm: MainViewModel
 ) {
-    // '번역기'가 잘 적용된 코드
-    val todos by vm.todos.collectAsState()
-    val activities by vm.altActivities.collectAsState()
+    var editDialogVisible by remember { mutableStateOf(false) }
+    var editText by remember { mutableStateOf("") }
+    var editId by remember { mutableStateOf(0L) }
 
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        items(todos, key = { it.id }) { t ->
 
-    Scaffold(
-        topBar = {
-            TodoTopAppBar(
-                selectedDate = selectedDate,
-                onMonthChange = { newYear, newMonth ->
-                    selectedDate = LocalDate.of(newYear, newMonth, 1)
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            HorizontalCalendarView(
-                selectedDate = selectedDate,
-                onDateSelected = { selectedDate = it }
-            )
-            HorizontalDivider(modifier = Modifier.fillMaxWidth(), color = Color.Gray.copy(alpha = 0.3f))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
 
-            if (todos.isEmpty() && activities.isEmpty()) {
-                // (데이터 없을 때 UI)
+                // 제목 및 상태
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    modifier = Modifier.weight(1f)
                 ) {
+                    Text(t.title)
                     Text(
-                        "등록된 목표가 없어요",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Gray
+                        if (t.completed) "완료 (${t.completedAt ?: ""})"
+                        else "미완료",
+                        color = Color.Gray,
+                        fontSize = 12.sp
                     )
-                    Text(
-                        "+ 버튼을 눌러 목표를 추가해 주세요",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Spacer(Modifier.height(16.dp))
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Button(onClick = {
-                            navController.navigate(Screen.Recommend.route)
-                        }) {
-                            Text("🌟 추천 목표 보기")
-                        }
-
-                        IconButton(
-                            onClick = {
-                                navController.navigate(Screen.AddGoal.route)
-                            },
-                            modifier = Modifier
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = CircleShape
-                                )
-                                .size(48.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "목표 추가",
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
                 }
-            } else {
-                // (데이터 있을 때 UI)
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(16.dp)
+
+                // ✏️ 연필 아이콘 (수정)
+                IconButton(
+                    onClick = {
+                        editId = t.id
+                        editText = t.title
+                        editDialogVisible = true
+                    }
                 ) {
-                    // --- '할 일' 리스트 ---
-                    items(todos, key = { it.id }) { t ->
-                        ListItem(
-                            headlineContent = { Text(t.title) },
-                            supportingContent = { Text(if (t.completed) "완료 (${t.completedAt ?: ""})" else "미완료") },
-                            trailingContent = {
-                                Checkbox(checked = t.completed, onCheckedChange = {
-                                    vm.toggleTodo(t.id, it) // 👈 DB 작업 (백그라운드)
-                                })
-                            }
-                        )
-                        Divider()
-                    }
-
-                    // --- '활동' 리스트 ---
-                    items(activities, key = { it.id }) { a ->
-                        ListItem(
-                            headlineContent = { Text(a.title) },
-                            trailingContent = {
-                                Row {
-                                    TextButton(onClick = { vm.renameActivity(a.id, a.title + " ✨") }) { Text("수정") }
-                                    TextButton(onClick = { vm.deleteActivity(a.id) }) { Text("삭제") }
-                                }
-                            }
-                        )
-                        Divider()
-                    }
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "수정",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
+
+                IconButton(
+                    onClick = { vm.deleteTodo(t.id) }
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "삭제",
+                        tint = Color.Red
+                    )
+                }
+
+                // ☑ 체크박스
+                Checkbox(
+                    checked = t.completed,
+                    onCheckedChange = {
+                        vm.toggleTodo(t.id, it)
+                    }
+                )
             }
+
+            Divider()
         }
+
+        // 기존 Activity 영역 그대로 유지
+        items(activities, key = { it.id }) { a ->
+            ListItem(
+                headlineContent = { Text(a.title) },
+                trailingContent = {
+                    Row {
+                        TextButton(onClick = { vm.renameActivity(a.id, a.title + " ✨") }) {
+                            Text("수정")
+                        }
+                        TextButton(onClick = { vm.deleteActivity(a.id) }) {
+                            Text("삭제")
+                        }
+                    }
+                }
+            )
+            Divider()
+        }
+    }
+
+    /* -------------------------- Todo 수정 다이얼로그 -------------------------- */
+
+    if (editDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { editDialogVisible = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (editText.isNotBlank()) {
+                            vm.renameTodo(editId, editText)
+                        }
+                        editDialogVisible = false
+                    }
+                ) { Text("저장") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editDialogVisible = false }) {
+                    Text("취소")
+                }
+            },
+            title = { Text("목표 수정") },
+            text = {
+                OutlinedTextField(
+                    value = editText,
+                    onValueChange = { editText = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        )
     }
 }

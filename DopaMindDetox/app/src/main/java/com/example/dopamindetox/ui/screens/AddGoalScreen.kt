@@ -1,44 +1,58 @@
 package com.example.dopamindetox.ui.screens
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.dopamindetox.vm.MainViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddGoalScreen(
     vm: MainViewModel,
-    navController: NavController
+    navController: NavController,
+    padding: PaddingValues
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("새 목표 추가") },
-                // '뒤로가기' 버튼
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) { // 👈 누르면 뒤로 감
-                        Icon(Icons.Default.ArrowBack, contentDescription = "뒤로가기")
-                    }
+    var title by remember { mutableStateOf(TextFieldValue("")) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            "새 목표 추가",
+            style = MaterialTheme.typography.headlineMedium
+        )
+        Spacer(Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("목표 제목") },
+            singleLine = true
+        )
+
+        Spacer(Modifier.height(30.dp))
+
+        Button(
+            onClick = {
+                if (title.text.isNotBlank()) {
+                    vm.addTodo(title.text)
+                    navController.popBackStack()
                 }
-            )
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = title.text.isNotBlank()
         ) {
-            // TODO: 여기에 '목표 추가' UI를 만듭니다
-            Text("새 목표 추가 화면")
+            Text("추가하기")
         }
     }
 }

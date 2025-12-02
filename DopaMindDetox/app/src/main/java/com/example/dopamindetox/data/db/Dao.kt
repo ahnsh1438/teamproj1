@@ -14,11 +14,23 @@ import kotlinx.coroutines.flow.Flow
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun set(g: Goal)
 }
 
-@Dao interface TodoDao {
-    @Query("SELECT * FROM Todo ORDER BY id DESC") fun all(): Flow<List<Todo>>
-    @Insert suspend fun add(t: Todo)
-    @Query("UPDATE Todo SET completed=:completed, completedAt=:completedAt WHERE id=:id")
-    suspend fun toggle(id:Long, completed:Boolean, completedAt:String?)
+@Dao
+interface TodoDao {
+    @Query("SELECT * FROM Todo ORDER BY id DESC")
+    fun all(): Flow<List<Todo>>
+
+    @Insert
+    suspend fun add(t: Todo)
+
+    @Query("UPDATE Todo SET completed = :completed, completedAt = :completedAt WHERE id = :id")
+    suspend fun toggle(id: Long, completed: Boolean, completedAt: String?)
+
+    // ⭐ Todo 수정 기능 추가 (새로 추가됨)
+    @Query("UPDATE Todo SET title = :title WHERE id = :id")
+    suspend fun rename(id: Long, title: String)
+
+    @Query("DELETE FROM Todo WHERE id = :id")
+    suspend fun delete(id: Long)
 }
 
 @Dao interface ActivityDao {
