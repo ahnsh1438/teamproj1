@@ -96,9 +96,20 @@ fun AppNavHost(mainVm: MainViewModel, padding: PaddingValues) {
             composable(Screen.Todo.route) { 
                 TodoScreen(vm = mainVm, navController = navController, padding = innerPadding)
             }
-            composable(Screen.AddGoal.route) {
-                AddGoalScreen(vm = mainVm, navController = navController, padding = innerPadding)
+            composable(
+                route = Screen.AddGoal.route + "/{dateKey}"
+            ) { backStackEntry ->
+
+                val dateKey = backStackEntry.arguments?.getString("dateKey") ?: "99991231"
+
+                AddGoalScreen(
+                    vm = mainVm,
+                    navController = navController,
+                    padding = innerPadding,
+                    dateKey = dateKey
+                )
             }
+
             composable(Screen.Recommend.route) {
                 RecommendScreen(vm = mainVm, navController = navController, padding = innerPadding)
             }

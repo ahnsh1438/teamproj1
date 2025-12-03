@@ -14,13 +14,29 @@ import com.example.dopamindetox.DopaApp
 import com.example.dopamindetox.ui.theme.AppTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import java.time.LocalDate
 
 class BlockOverlayActivity : ComponentActivity() {
+
+    /** 오늘 날짜 yyyyMMdd 포맷으로 반환 */
+    private fun getTodayKey(): String {
+        val today = LocalDate.now()
+        return "%04d%02d%02d".format(today.year, today.monthValue, today.dayOfMonth)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         val repo = (application as DopaApp).repository
-        val todos = runBlocking { repo.todos().first() }
+
+        // ⭐ 오늘 날짜 문자열 생성
+        val todayKey = getTodayKey()
+
+        // ⭐ 해당 날짜의 todo만 불러오기
+        val todos = runBlocking {
+            repo.todosByDate(todayKey).first()
+        }
 
         setContent {
             AppTheme {
@@ -31,7 +47,6 @@ class BlockOverlayActivity : ComponentActivity() {
                             .padding(24.dp)
                     ) {
 
-                        // 상단 제목
                         Text(
                             "블락 모드",
                             style = MaterialTheme.typography.headlineMedium
@@ -43,37 +58,34 @@ class BlockOverlayActivity : ComponentActivity() {
 
                         Spacer(Modifier.height(20.dp))
 
-                        // 🟣 해야 할 일 — 글자 크게!
                         Text(
                             "해야 할 일",
-                            fontSize = 26.sp,      // 글자 크기 증가
+                            fontSize = 26.sp,
                             fontWeight = MaterialTheme.typography.titleLarge.fontWeight
                         )
 
                         Spacer(Modifier.height(10.dp))
 
-                        // 해야 할 일 목록
+                        // ⭐ 오늘자 Todo만 표시됨
                         todos.take(5).forEach {
                             Text(
                                 "• ${it.title}",
-                                fontSize = 18.sp,      // 항목도 크게
+                                fontSize = 18.sp,
                                 modifier = Modifier.padding(bottom = 4.dp)
                             )
                         }
 
                         Spacer(Modifier.height(40.dp))
 
-
                         Button(
                             onClick = { finish() },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(54.dp),       // 버튼 키움
-                            shape = MaterialTheme.shapes.medium
+                                .height(54.dp)
                         ) {
                             Text(
                                 "제로도파민으로 돌아가기",
-                                fontSize = 18.sp,     // 버튼 글씨 크게
+                                fontSize = 18.sp,
                                 fontWeight = MaterialTheme.typography.titleMedium.fontWeight
                             )
                         }

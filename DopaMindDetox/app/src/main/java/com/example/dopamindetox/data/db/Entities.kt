@@ -19,6 +19,7 @@ data class Goal(
 data class Todo(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
+    val date: String,                    // ⭐ 추가됨: Todo가 속한 날짜 (yyyy-MM-dd)
     val completed: Boolean = false,
     val completedAt: String? = null
 )

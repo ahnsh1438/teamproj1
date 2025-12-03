@@ -9,9 +9,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.dopamindetox.vm.MainViewModel
 import com.example.dopamindetox.nav.Screen
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-
 
 @Composable
 fun RecommendScreen(
@@ -42,6 +39,7 @@ fun RecommendScreen(
             Spacer(Modifier.height(16.dp))
 
             recommendations.forEach { (title, desc) ->
+
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -50,6 +48,7 @@ fun RecommendScreen(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 ) {
+
                     Column(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -63,7 +62,16 @@ fun RecommendScreen(
 
                         Button(
                             onClick = {
-                                vm.addTodo(title)
+                                // ⭐ 오늘 날짜 생성
+                                val today = java.time.LocalDate.now()
+                                val dateKey = "%04d%02d%02d".format(
+                                    today.year, today.monthValue, today.dayOfMonth
+                                )
+
+                                // ⭐ 해당 날짜에 Todo 저장
+                                vm.addTodo(title, dateKey)
+
+                                // 뒤로 이동
                                 navController.popBackStack()
                             },
                             modifier = Modifier.align(Alignment.End)

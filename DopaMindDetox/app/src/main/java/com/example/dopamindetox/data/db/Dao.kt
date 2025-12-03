@@ -16,19 +16,28 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TodoDao {
+
+    // 전체 Todo 조회
     @Query("SELECT * FROM Todo ORDER BY id DESC")
     fun all(): Flow<List<Todo>>
 
+    // ⭐ 특정 날짜 Todo만 조회 (추가됨)
+    @Query("SELECT * FROM Todo WHERE date = :date ORDER BY id DESC")
+    fun todosByDate(date: String): Flow<List<Todo>>
+
+    // Todo 추가
     @Insert
     suspend fun add(t: Todo)
 
+    // 완료 상태 토글
     @Query("UPDATE Todo SET completed = :completed, completedAt = :completedAt WHERE id = :id")
     suspend fun toggle(id: Long, completed: Boolean, completedAt: String?)
 
-    // ⭐ Todo 수정 기능 추가 (새로 추가됨)
+    // 제목 수정
     @Query("UPDATE Todo SET title = :title WHERE id = :id")
     suspend fun rename(id: Long, title: String)
 
+    // 삭제
     @Query("DELETE FROM Todo WHERE id = :id")
     suspend fun delete(id: Long)
 }
